@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Exchange Bot · Dashboard</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0b0b14;--card:#13132a;--card2:#1a1a35;--border:#252545;
+  --text:#e2e2ee;--dim:#4a4a66;--dim2:#666688;
+  --green:#00e5a0;--gd:rgba(0,229,160,.12);
+  --amber:#ffb300;--ad:rgba(255,179,0,.12);
+  --red:#ff4444;--rd:rgba(255,68,68,.12);
+  --blue:#4488ff;--bd:rgba(68,136,255,.12);
+  --purple:#aa66ff;
+  --r:14px;
+}
+html{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,monospace;font-size:14px;-webkit-text-size-adjust:100%}
+body{padding:0;max-width:480px;margin:0 auto;padding-bottom:env(safe-area-inset-bottom,16px)}
+
+/* ─── HEADER ─────────────────────────────────────────────── */
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;position:sticky;top:0;background:var(--bg);z-index:99;border-bottom:1px solid var(--border)}
+.hdr-logo{font-size:15px;font-weight:700;letter-spacing:2px;color:var(--green)}
+.hdr-r{display:flex;align-items:center;gap:10px}
+.mode-pill{font-size:10px;padding:3px 9px;border-radius:20px;border:1px solid var(--amber);color:var(--amber);letter-spacing:1px}
+.deployed{font-size:9px;color:var(--dim2);text-align:right}
+
+/* ─── CARDS ───────────────────────────────────────────────── */
+.cards{padding:12px 12px 0}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:10px}
+.ct{font-size:9px;font-weight:700;color:var(--dim2);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px}
+
+/* ─── STATUS CARD ─────────────────────────────────────────── */
+.status-row{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;letter-spacing:1px}
+.badge.idle{background:var(--card2);color:var(--dim2);border:1px solid var(--dim)}
+.badge.running{background:var(--ad);color:var(--amber);border:1px solid var(--amber)}
+.badge.complete{background:var(--gd);color:var(--green);border:1px solid var(--green)}
+.badge.error{background:var(--rd);color:var(--red);border:1px solid var(--red)}
+.badge.starting{background:var(--bd);color:var(--blue);border:1px solid var(--blue)}
+.pulse{width:8px;height:8px;border-radius:50%;background:currentColor;animation:pulse 1.2s infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.status-msg{font-size:12px;color:var(--dim2);line-height:1.4}
+
+/* pipeline */
+.pipeline{display:flex;align-items:center;margin:12px 0 6px}
+.pstage{display:flex;flex-direction:column;align-items:center;flex:1;min-width:0}
+.pdot{width:30px;height:30px;border-radius:50%;border:2px solid var(--dim);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--dim)}
+.pdot.done{border-color:var(--green);color:var(--green);background:var(--gd)}
+.pdot.active{border-color:var(--amber);color:var(--amber);background:var(--ad)}
+.pdot.err{border-color:var(--red);color:var(--red);background:var(--rd)}
+.plbl{font-size:7px;letter-spacing:1px;color:var(--dim);margin-top:4px;font-weight:700}
+.plbl.done{color:var(--green)}.plbl.active{color:var(--amber)}.plbl.err{color:var(--red)}
+.pconn{height:2px;flex:.4;background:var(--dim);margin-bottom:22px}
+.pconn.done{background:var(--green)}.pconn.active{background:var(--amber)}
+
+/* ─── PERF CARD ───────────────────────────────────────────── */
+.pnl-big{font-size:36px;font-weight:700;letter-spacing:-1px;margin-bottom:4px}
+.pnl-big.pos{color:var(--green)}.pnl-big.neg{color:var(--red)}.pnl-big.neu{color:var(--text)}
+.pnl-sub{font-size:9px;color:var(--dim2);letter-spacing:1px;margin-bottom:16px}
+
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.stat-box{background:var(--card2);border-radius:10px;padding:10px;text-align:center}
+.stat-val{font-size:20px;font-weight:700}
+.stat-val.pos{color:var(--green)}.stat-val.neg{color:var(--red)}.stat-val.blue{color:var(--blue)}
+.stat-lbl{font-size:8px;color:var(--dim2);letter-spacing:1px;margin-top:3px}
+
+.prog-row{margin-bottom:6px}
+.prog-lbl{display:flex;justify-content:space-between;font-size:10px;color:var(--dim2);margin-bottom:4px}
+.prog-track{height:6px;background:var(--card2);border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;border-radius:3px}
+
+/* ─── BANDS CARD ──────────────────────────────────────────── */
+.band-item{background:var(--card2);border-radius:10px;padding:12px;margin-bottom:8px}
+.band-item:last-child{margin-bottom:0}
+.band-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.band-name{font-size:13px;font-weight:700}
+.band-count{font-size:22px;font-weight:700}
+.band-meta{display:flex;justify-content:space-between;font-size:10px;color:var(--dim2);margin-bottom:8px}
+.band-prog{height:5px;background:var(--card);border-radius:3px;overflow:hidden}
+.band-progf{height:100%;border-radius:3px}
+
+/* ─── SIGNALS ─────────────────────────────────────────────── */
+.sig-item{padding:10px 0;border-bottom:1px solid var(--border)}
+.sig-item:last-child{border-bottom:none}
+.sig-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.sig-name{font-size:12px;font-weight:600;flex:1;line-height:1.3}
+.sig-edge{font-size:13px;font-weight:700;flex-shrink:0}
+.sig-edge.hi{color:var(--green)}.sig-edge.lo{color:var(--amber)}
+.sig-meta{font-size:10px;color:var(--dim2);margin-top:3px}
+.plat-pill{display:inline-block;font-size:8px;padding:2px 6px;border-radius:3px;font-weight:700;margin-left:4px}
+.plat-pill.betfair{background:var(--bd);color:var(--blue)}
+.plat-pill.matchbook{background:rgba(170,102,255,.15);color:var(--purple)}
+
+/* ─── ACTIVITY ────────────────────────────────────────────── */
+.act-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.act-item:last-child{border-bottom:none}
+.act-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;margin-top:3px}
+.act-dot.complete{background:var(--green)}.act-dot.error{background:var(--red)}
+.act-dot.killed{background:var(--amber)}.act-dot.running{background:var(--blue)}
+.act-body{flex:1;min-width:0}
+.act-title{font-size:12px;font-weight:600}
+.act-meta{font-size:10px;color:var(--dim2);margin-top:2px}
+.act-badge{font-size:9px;padding:2px 8px;border-radius:10px;font-weight:700;flex-shrink:0;margin-top:2px}
+.act-badge.complete{background:var(--gd);color:var(--green)}
+.act-badge.error{background:var(--rd);color:var(--red)}
+.act-badge.killed{background:var(--ad);color:var(--amber)}
+.act-badge.running{background:var(--bd);color:var(--blue)}
+
+/* ─── HEALTH ──────────────────────────────────────────────── */
+.sch-row{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:12px}
+.sch-item{background:var(--card2);border-radius:8px;padding:8px 4px;text-align:center;border:1px solid var(--border)}
+.sch-item.next{border-color:var(--blue);background:var(--bd)}
+.sch-time{font-size:12px;font-weight:700}
+.sch-cd{font-size:8px;color:var(--dim2);margin-top:2px}
+.sch-item.next .sch-cd{color:var(--blue)}
+
+.conn-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.conn-pill{border-radius:10px;padding:12px;background:var(--card2);border:1px solid var(--border)}
+.conn-pill.ok{border-color:var(--green);background:var(--gd)}
+.conn-pill.err{border-color:var(--red);background:var(--rd)}
+.conn-pill.stale{border-color:var(--amber);background:var(--ad)}
+.conn-name{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;margin-bottom:5px}
+.conn-dot{width:7px;height:7px;border-radius:50%}
+.conn-pill.ok .conn-dot{background:var(--green)}
+.conn-pill.err .conn-dot{background:var(--red)}
+.conn-pill.stale .conn-dot{background:var(--amber)}
+.conn-pill.ok .conn-name{color:var(--green)}
+.conn-pill.err .conn-name{color:var(--red)}
+.conn-pill.stale .conn-name{color:var(--amber)}
+.conn-sub{font-size:9px;color:var(--dim2)}
+
+.bk-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:11px}
+.bk-row:last-child{border-bottom:none}
+.bk-lbl{color:var(--dim2)}.bk-val{font-weight:600}
+.bk-val.ok{color:var(--green)}.bk-val.err{color:var(--red)}
+
+/* ─── CONTEXT ─────────────────────────────────────────────── */
+.ctx-box{background:var(--card2);border-radius:10px;padding:12px;font-size:10px;color:var(--dim2);line-height:1.7;white-space:pre-wrap;word-break:break-word}
+
+/* ─── FOOTER ──────────────────────────────────────────────── */
+.footer{text-align:center;padding:16px;font-size:9px;color:var(--dim);letter-spacing:1px}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-logo">&#x2B21; EXCHANGE BOT</div>
+  <div class="hdr-r">
+    <div id="mode-pill" class="mode-pill">PAPER</div>
+    <div class="deployed" id="deployed-at">Loading...</div>
+  </div>
+</div>
+
+<div class="cards">
+
+  <!-- 1. LIVE RUN STATUS -->
+  <div class="card">
+    <div class="ct">Run Status</div>
+    <div class="status-row">
+      <div id="run-badge" class="badge idle"><span>&#x25CF;</span>&nbsp;IDLE</div>
+      <div id="run-msg" class="status-msg">Waiting for next routine</div>
+    </div>
+    <div class="pipeline" id="pipeline"></div>
+  </div>
+
+  <!-- 2. SCHEDULE -->
+  <div class="card">
+    <div class="ct">Next Runs (UTC)</div>
+    <div class="sch-row" id="sch-row"></div>
+    <div style="font-size:9px;color:var(--dim2);text-align:center" id="sch-note"></div>
+  </div>
+
+  <!-- 3. PERFORMANCE -->
+  <div class="card">
+    <div class="ct">Paper Performance</div>
+    <div id="pnl-big" class="pnl-big neu">£0.00</div>
+    <div class="pnl-sub">PAPER P&amp;L</div>
+    <div class="stats-grid">
+      <div class="stat-box"><div id="s-trades" class="stat-val">0</div><div class="stat-lbl">TRADES</div></div>
+      <div class="stat-box"><div id="s-wr" class="stat-val">—</div><div class="stat-lbl">WIN RATE</div></div>
+      <div class="stat-box"><div id="s-open" class="stat-val blue">0</div><div class="stat-lbl">OPEN</div></div>
+    </div>
+    <div class="prog-row" id="plat-bars"></div>
+  </div>
+
+  <!-- 4. SIGNAL PIPELINE / DISTRIBUTION BANDS -->
+  <div class="card">
+    <div class="ct">Signal Distribution</div>
+    <div class="stats-grid" style="margin-bottom:14px">
+      <div class="stat-box"><div id="d-total" class="stat-val">0</div><div class="stat-lbl">TOTAL</div></div>
+      <div class="stat-box"><div id="d-res" class="stat-val" style="color:var(--green)">0</div><div class="stat-lbl">RESOLVED</div></div>
+      <div class="stat-box"><div id="d-open" class="stat-val" style="color:var(--amber)">0</div><div class="stat-lbl">OPEN</div></div>
+    </div>
+    <div id="band-cards"></div>
+    <div id="review-note" style="font-size:10px;color:var(--dim2);margin-top:8px;text-align:center"></div>
+  </div>
+
+  <!-- 5. LATEST SIGNALS -->
+  <div class="card">
+    <div class="ct">Latest Signals</div>
+    <div id="signals-list"><div style="color:var(--dim);font-size:11px">No signals in current snapshot</div></div>
+  </div>
+
+  <!-- 6. RECENT ACTIVITY -->
+  <div class="card">
+    <div class="ct">Recent Activity</div>
+    <div id="activity-list"><div style="color:var(--dim);font-size:11px">No activity yet</div></div>
+  </div>
+
+  <!-- 7. SYSTEM HEALTH -->
+  <div class="card">
+    <div class="ct">System Health</div>
+    <div class="conn-grid" id="conn-grid"></div>
+    <div id="backup-rows"></div>
+  </div>
+
+  <!-- 8. LAST RUN CONTEXT -->
+  <div class="card">
+    <div class="ct">Last Run Notes</div>
+    <div id="ctx-box" class="ctx-box">—</div>
+  </div>
+
+</div>
+
+<div class="footer">SNAPSHOT · DEPLOYED BY BOT · ALL TIMES UTC</div>
+
+<script>
+// ─── DATA (injected by deploy_dashboard.sh) ───────────────────────────────────
+const D = {"deployed_at": "2026-05-03T19:01:39.649067+00:00", "mode": "paper", "run_status": {"state": "complete", "current_step": "done", "message": "Routine completed successfully", "session": "routine_1800", "started_at": "2026-05-03 18:00:01", "updated_at": "2026-05-03 18:04:56", "elapsed_minutes": 3, "log_file": "/home/jwfalc/smarkets-bot/data/logs/routine_1800.log"}, "paper_trading": {"paper_pnl": 58.8, "total_trades": 12, "wins": 12, "losses": 0, "open_trades": 51, "win_rate_pct": 100.0, "roi_pct": 98.0, "platform_breakdown": {"betfair": {"win_rate_pct": 100.0, "total": 12, "wins": 12}}, "all_trades": [{"pnl": 4.9}, {"pnl": 4.9}, {"pnl": 4.9}, {"pnl": 4.9}, {"pnl": 4.9}, {"pnl": 4.9}, {"pnl": 4.9}, {"pnl": 4.9}, {"pnl": 4.9}, {"pnl": 4.9}, {"pnl": 4.9}, {"pnl": 4.9}]}, "edge_distribution": [{"entry_id": "D0001", "timestamp": "2026-05-02T16:20:14.598384Z", "platform": "betfair", "market_id": "1.198234985", "contract_id": "12345678", "market_name": "Turkish Airlines Open Winner", "event_name": "Turkish Airlines Open 2026", "category": "sports", "edge_pp": 7.3, "band": "7-9pp", "market_prob_pct": 6.2, "claude_prob_pct": 13.5, "confidence": "medium", "above_live_threshold": false, "paper_staked": false, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0002", "timestamp": "2026-05-02T16:20:14.598384Z", "platform": "betfair", "market_id": "1.197564782", "contract_id": "567890", "market_name": "Match Odds", "event_name": "Alaves v Athletic Bilbao", "category": "sports", "edge_pp": 8.2, "band": "7-9pp", "market_prob_pct": 36.0, "claude_prob_pct": 44.2, "confidence": "medium", "above_live_threshold": false, "paper_staked": false, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0003", "timestamp": "2026-05-02T16:20:14.598384Z", "platform": "matchbook", "market_id": "1.195234156", "contract_id": "MB_89234", "market_name": "Top 5 Finish", "event_name": "Turkish Airlines Open 2026", "category": "sports", "edge_pp": 8.0, "band": "7-9pp", "market_prob_pct": 18.0, "claude_prob_pct": 26.0, "confidence": "medium", "above_live_threshold": false, "paper_staked": false, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0004", "timestamp": "2026-05-02T22:03:50.785454", "platform": "betfair", "market_id": "1.257603869", "contract_id": "Philadelphia 76ers", "market_name": "Handicap", "event_name": "Philadelphia 76ers @ Boston Celtics", "category": "current-affairs", "edge_pp": 64.68, "band": "12pp+", "market_prob_pct": 99.01, "claude_prob_pct": 34.33, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": false, "resolved": true, "resolved_at": "2026-05-03T08:00:08.951032", "resolution_notes": "Auto-resolved by check_resolutions.py"}, {"entry_id": "D0005", "timestamp": "2026-05-02T22:03:50.785454", "platform": "betfair", "market_id": "1.257603869", "contract_id": "Boston Celtics", "market_name": "Handicap", "event_name": "Philadelphia 76ers @ Boston Celtics", "category": "current-affairs", "edge_pp": 10.06, "band": "10-11pp", "market_prob_pct": 16.67, "claude_prob_pct": 6.61, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": false, "resolved": true, "resolved_at": "2026-05-03T08:00:08.951092", "resolution_notes": "Auto-resolved by check_resolutions.py"}, {"entry_id": "D0006", "timestamp": "2026-05-02T22:03:50.785454", "platform": "betfair", "market_id": "1.257462604", "contract_id": "Cameron Young", "market_name": "Top 20 Finish", "event_name": " PGA Cadillac Championship 2026", "category": "current-affairs", "edge_pp": 63.68, "band": "12pp+", "market_prob_pct": 99.01, "claude_prob_pct": 35.33, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0007", "timestamp": "2026-05-02T22:03:50.785454", "platform": "betfair", "market_id": "1.257462604", "contract_id": "Si Woo Kim", "market_name": "Top 20 Finish", "event_name": " PGA Cadillac Championship 2026", "category": "current-affairs", "edge_pp": 11.06, "band": "12pp+", "market_prob_pct": 16.67, "claude_prob_pct": 5.61, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0008", "timestamp": "2026-05-02T22:03:50.785454", "platform": "betfair", "market_id": "1.257462604", "contract_id": "Kristoffer Reitan", "market_name": "Top 20 Finish", "event_name": " PGA Cadillac Championship 2026", "category": "current-affairs", "edge_pp": 11.06, "band": "12pp+", "market_prob_pct": 16.67, "claude_prob_pct": 5.61, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0009", "timestamp": "2026-05-02T22:03:50.785454", "platform": "betfair", "market_id": "1.257462604", "contract_id": "Ben Griffin", "market_name": "Top 20 Finish", "event_name": " PGA Cadillac Championship 2026", "category": "current-affairs", "edge_pp": 65.68, "band": "12pp+", "market_prob_pct": 99.01, "claude_prob_pct": 33.33, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0010", "timestamp": "2026-05-02T22:03:50.785454", "platform": "betfair", "market_id": "1.257462604", "contract_id": "Matt McCarty", "market_name": "Top 20 Finish", "event_name": " PGA Cadillac Championship 2026", "category": "current-affairs", "edge_pp": 65.68, "band": "12pp+", "market_prob_pct": 99.01, "claude_prob_pct": 33.33, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0011", "timestamp": "2026-05-02T22:03:50.785454", "platform": "betfair", "market_id": "1.257462600", "contract_id": "Si Woo Kim", "market_name": "Top 10 Finish", "event_name": " PGA Cadillac Championship 2026", "category": "current-affairs", "edge_pp": 65.68, "band": "12pp+", "market_prob_pct": 99.01, "claude_prob_pct": 33.33, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0012", "timestamp": "2026-05-02T22:03:50.785454", "platform": "betfair", "market_id": "1.257462600", "contract_id": "Kristoffer Reitan", "market_name": "Top 10 Finish", "event_name": " PGA Cadillac Championship 2026", "category": "current-affairs", "edge_pp": 11.06, "band": "12pp+", "market_prob_pct": 16.67, "claude_prob_pct": 5.61, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0013", "timestamp": "2026-05-02T22:03:50.785454", "platform": "betfair", "market_id": "1.257462600", "contract_id": "Ben Griffin", "market_name": "Top 10 Finish", "event_name": " PGA Cadillac Championship 2026", "category": "current-affairs", "edge_pp": 65.68, "band": "12pp+", "market_prob_pct": 99.01, "claude_prob_pct": 33.33, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0014", "timestamp": "2026-05-02T22:03:50.785454", "platform": "betfair", "market_id": "1.257462600", "contract_id": "Matt McCarty", "market_name": "Top 10 Finish", "event_name": " PGA Cadillac Championship 2026", "category": "current-affairs", "edge_pp": 65.68, "band": "12pp+", "market_prob_pct": 99.01, "claude_prob_pct": 33.33, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0015", "timestamp": "2026-05-02T22:03:50.785454", "platform": "betfair", "market_id": "1.257462599", "contract_id": "Cameron Young", "market_name": "Top 5 Finish", "event_name": " PGA Cadillac Championship 2026", "category": "current-affairs", "edge_pp": 61.68, "band": "12pp+", "market_prob_pct": 99.01, "claude_prob_pct": 37.33, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0016", "timestamp": "2026-05-02T22:03:50.785454", "platform": "betfair", "market_id": "1.257462599", "contract_id": "Si Woo Kim", "market_name": "Top 5 Finish", "event_name": " PGA Cadillac Championship 2026", "category": "current-affairs", "edge_pp": 65.68, "band": "12pp+", "market_prob_pct": 99.01, "claude_prob_pct": 33.33, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0017", "timestamp": "2026-05-02T22:03:50.785454", "platform": "betfair", "market_id": "1.257462599", "contract_id": "Kristoffer Reitan", "market_name": "Top 5 Finish", "event_name": " PGA Cadillac Championship 2026", "category": "current-affairs", "edge_pp": 11.06, "band": "12pp+", "market_prob_pct": 16.67, "claude_prob_pct": 5.61, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0018", "timestamp": "2026-05-02T22:03:50.785454", "platform": "betfair", "market_id": "1.257462599", "contract_id": "Nick Taylor", "market_name": "Top 5 Finish", "event_name": " PGA Cadillac Championship 2026", "category": "current-affairs", "edge_pp": 11.06, "band": "12pp+", "market_prob_pct": 16.67, "claude_prob_pct": 5.61, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0019", "timestamp": "2026-05-02T22:03:50.785454", "platform": "betfair", "market_id": "1.257462599", "contract_id": "Ben Griffin", "market_name": "Top 5 Finish", "event_name": " PGA Cadillac Championship 2026", "category": "current-affairs", "edge_pp": 65.68, "band": "12pp+", "market_prob_pct": 99.01, "claude_prob_pct": 33.33, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0020", "timestamp": "2026-05-02T22:03:50.785454", "platform": "matchbook", "market_id": "30682279772700073", "contract_id": "Manchester United", "market_name": "Top 4 Finish", "event_name": "English Premier League  - Top 4 Finish 2025/26", "category": "current-affairs", "edge_pp": 46.65, "band": "12pp+", "market_prob_pct": 91.74, "claude_prob_pct": 45.09, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0021", "timestamp": "2026-05-02T22:03:50.785454", "platform": "matchbook", "market_id": "30682279772700073", "contract_id": "Liverpool", "market_name": "Top 4 Finish", "event_name": "English Premier League  - Top 4 Finish 2025/26", "category": "current-affairs", "edge_pp": 35.1, "band": "12pp+", "market_prob_pct": 67.57, "claude_prob_pct": 32.47, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0022", "timestamp": "2026-05-02T22:03:50.785454", "platform": "matchbook", "market_id": "30682279772700073", "contract_id": "Aston Villa", "market_name": "Top 4 Finish", "event_name": "English Premier League  - Top 4 Finish 2025/26", "category": "current-affairs", "edge_pp": 22.39, "band": "12pp+", "market_prob_pct": 43.1, "claude_prob_pct": 20.71, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0023", "timestamp": "2026-05-02T22:03:50.785454", "platform": "betfair", "market_id": "1.257604014", "contract_id": "Under", "market_name": "Total Points", "event_name": "Philadelphia 76ers @ Boston Celtics", "category": "current-affairs", "edge_pp": 65.68, "band": "12pp+", "market_prob_pct": 99.01, "claude_prob_pct": 33.33, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": false, "resolved": true, "resolved_at": "2026-05-03T08:00:09.564205", "resolution_notes": "Auto-resolved by check_resolutions.py"}, {"entry_id": "D0024", "timestamp": "2026-05-02T22:03:50.785454", "platform": "betfair", "market_id": "1.257604014", "contract_id": "Over", "market_name": "Total Points", "event_name": "Philadelphia 76ers @ Boston Celtics", "category": "current-affairs", "edge_pp": 11.06, "band": "12pp+", "market_prob_pct": 16.67, "claude_prob_pct": 5.61, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": false, "resolved": true, "resolved_at": "2026-05-03T08:00:09.564239", "resolution_notes": "Auto-resolved by check_resolutions.py"}, {"entry_id": "D0025", "timestamp": "2026-05-02T22:03:50.785454", "platform": "matchbook", "market_id": "30684204946600073", "contract_id": "Aston Villa", "market_name": "Top 6 Finish", "event_name": "English Premier League  - Top 6 Finish 2025/26", "category": "current-affairs", "edge_pp": 10.18, "band": "10-11pp", "market_prob_pct": 16.67, "claude_prob_pct": 6.49, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0026", "timestamp": "2026-05-02T22:03:50.785454", "platform": "matchbook", "market_id": "30684204946600073", "contract_id": "Manchester United", "market_name": "Top 6 Finish", "event_name": "English Premier League  - Top 6 Finish 2025/26", "category": "current-affairs", "edge_pp": 10.18, "band": "10-11pp", "market_prob_pct": 16.67, "claude_prob_pct": 6.49, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0027", "timestamp": "2026-05-02T22:03:50.785454", "platform": "matchbook", "market_id": "30257147690500076", "contract_id": "Arsenal", "market_name": "Winner", "event_name": "English Premier League 2025/26", "category": "soccer", "edge_pp": 7.158769943386517, "band": "7-9pp", "market_prob_pct": 71.43, "claude_prob_pct": 64.27, "confidence": "medium", "above_live_threshold": false, "paper_staked": false, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0028", "timestamp": "2026-05-02T22:03:50.785454", "platform": "betfair", "market_id": "1.257462604", "contract_id": "Scottie Scheffler", "market_name": "Top 20 Finish", "event_name": " PGA Cadillac Championship 2026", "category": "golf", "edge_pp": 7.055561166661057, "band": "7-9pp", "market_prob_pct": 16.67, "claude_prob_pct": 9.61, "confidence": "medium", "above_live_threshold": false, "paper_staked": false, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0029", "timestamp": "2026-05-02T22:03:50.785454", "platform": "betfair", "market_id": "1.257462600", "contract_id": "Cameron Young", "market_name": "Top 10 Finish", "event_name": " PGA Cadillac Championship 2026", "category": "golf", "edge_pp": 7.055561166661057, "band": "7-9pp", "market_prob_pct": 16.67, "claude_prob_pct": 9.61, "confidence": "medium", "above_live_threshold": false, "paper_staked": false, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0030", "timestamp": "2026-05-02T22:03:50.785454", "platform": "betfair", "market_id": "1.257462600", "contract_id": "Scottie Scheffler", "market_name": "Top 10 Finish", "event_name": " PGA Cadillac Championship 2026", "category": "golf", "edge_pp": 7.055561166661057, "band": "7-9pp", "market_prob_pct": 16.67, "claude_prob_pct": 9.61, "confidence": "medium", "above_live_threshold": false, "paper_staked": false, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0031", "timestamp": "2026-05-02T22:03:50.785454", "platform": "betfair", "market_id": "1.257462599", "contract_id": "Scottie Scheffler", "market_name": "Top 5 Finish", "event_name": " PGA Cadillac Championship 2026", "category": "golf", "edge_pp": 7.055561166661057, "band": "7-9pp", "market_prob_pct": 16.67, "claude_prob_pct": 9.61, "confidence": "medium", "above_live_threshold": false, "paper_staked": false, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0032", "timestamp": "2026-05-02T22:03:50.785454", "platform": "matchbook", "market_id": "30682279772700073", "contract_id": "Manchester City", "market_name": "Top 4 Finish", "event_name": "English Premier League  - Top 4 Finish 2025/26", "category": "soccer", "edge_pp": 9.65692682301679, "band": "10-11pp", "market_prob_pct": 16.67, "claude_prob_pct": 7.01, "confidence": "medium", "above_live_threshold": false, "paper_staked": false, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0033", "timestamp": "2026-05-02T22:03:50.785454", "platform": "matchbook", "market_id": "30684204946600073", "contract_id": "Manchester City", "market_name": "Top 6 Finish", "event_name": "English Premier League  - Top 6 Finish 2025/26", "category": "soccer", "edge_pp": 8.17666666666667, "band": "7-9pp", "market_prob_pct": 16.67, "claude_prob_pct": 8.49, "confidence": "medium", "above_live_threshold": false, "paper_staked": false, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0034", "timestamp": "2026-05-02T22:03:50.785454", "platform": "matchbook", "market_id": "30684204946600073", "contract_id": "Liverpool", "market_name": "Top 6 Finish", "event_name": "English Premier League  - Top 6 Finish 2025/26", "category": "soccer", "edge_pp": 8.17666666666667, "band": "7-9pp", "market_prob_pct": 16.67, "claude_prob_pct": 8.49, "confidence": "medium", "above_live_threshold": false, "paper_staked": false, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0035", "timestamp": "2026-05-03T05:04:53.072936", "platform": "betfair", "market_id": "1.257462604", "contract_id": "Scottie Scheffler", "market_name": "Top 20 Finish", "event_name": "  PGA Cadillac Championship 2026", "category": "current-affairs", "edge_pp": 76.2, "band": "12pp+", "market_prob_pct": 99.01, "claude_prob_pct": 22.81, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0036", "timestamp": "2026-05-03T05:04:53.072936", "platform": "betfair", "market_id": "1.257462604", "contract_id": "Si Woo Kim", "market_name": "Top 20 Finish", "event_name": "  PGA Cadillac Championship 2026", "category": "current-affairs", "edge_pp": 77.43, "band": "12pp+", "market_prob_pct": 98.04, "claude_prob_pct": 20.61, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0037", "timestamp": "2026-05-03T05:04:53.072936", "platform": "betfair", "market_id": "1.257462604", "contract_id": "Kristoffer Reitan", "market_name": "Top 20 Finish", "event_name": "  PGA Cadillac Championship 2026", "category": "current-affairs", "edge_pp": 74.51, "band": "12pp+", "market_prob_pct": 94.34, "claude_prob_pct": 19.83, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0038", "timestamp": "2026-05-03T05:04:53.072936", "platform": "betfair", "market_id": "1.257462604", "contract_id": "Ben Griffin", "market_name": "Top 20 Finish", "event_name": "  PGA Cadillac Championship 2026", "category": "current-affairs", "edge_pp": 73.82, "band": "12pp+", "market_prob_pct": 93.46, "claude_prob_pct": 19.64, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0039", "timestamp": "2026-05-03T05:04:53.072936", "platform": "betfair", "market_id": "1.257462604", "contract_id": "Nick Taylor", "market_name": "Top 20 Finish", "event_name": "  PGA Cadillac Championship 2026", "category": "current-affairs", "edge_pp": 71.8, "band": "12pp+", "market_prob_pct": 90.91, "claude_prob_pct": 19.11, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0040", "timestamp": "2026-05-03T05:04:53.072936", "platform": "betfair", "market_id": "1.257462600", "contract_id": "Scottie Scheffler", "market_name": "Top 10 Finish", "event_name": "  PGA Cadillac Championship 2026", "category": "current-affairs", "edge_pp": 65.55, "band": "12pp+", "market_prob_pct": 90.91, "claude_prob_pct": 25.36, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0041", "timestamp": "2026-05-03T05:04:53.072936", "platform": "betfair", "market_id": "1.257462600", "contract_id": "Si Woo Kim", "market_name": "Top 10 Finish", "event_name": "  PGA Cadillac Championship 2026", "category": "current-affairs", "edge_pp": 64.06, "band": "12pp+", "market_prob_pct": 86.21, "claude_prob_pct": 22.15, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0042", "timestamp": "2026-05-03T05:04:53.072936", "platform": "betfair", "market_id": "1.257462600", "contract_id": "Kristoffer Reitan", "market_name": "Top 10 Finish", "event_name": "  PGA Cadillac Championship 2026", "category": "current-affairs", "edge_pp": 58.98, "band": "12pp+", "market_prob_pct": 79.37, "claude_prob_pct": 20.39, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0043", "timestamp": "2026-05-03T05:04:53.072936", "platform": "betfair", "market_id": "1.257462600", "contract_id": "Ben Griffin", "market_name": "Top 10 Finish", "event_name": "  PGA Cadillac Championship 2026", "category": "current-affairs", "edge_pp": 51.6, "band": "12pp+", "market_prob_pct": 69.44, "claude_prob_pct": 17.84, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0044", "timestamp": "2026-05-03T05:04:53.072936", "platform": "betfair", "market_id": "1.257462600", "contract_id": "Nick Taylor", "market_name": "Top 10 Finish", "event_name": "  PGA Cadillac Championship 2026", "category": "current-affairs", "edge_pp": 47.03, "band": "12pp+", "market_prob_pct": 63.29, "claude_prob_pct": 16.26, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0045", "timestamp": "2026-05-03T05:04:53.072936", "platform": "betfair", "market_id": "1.257462599", "contract_id": "Cameron Young", "market_name": "Top 5 Finish", "event_name": "  PGA Cadillac Championship 2026", "category": "current-affairs", "edge_pp": 67.44, "band": "12pp+", "market_prob_pct": 99.01, "claude_prob_pct": 31.57, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0046", "timestamp": "2026-05-03T05:04:53.072936", "platform": "betfair", "market_id": "1.257462599", "contract_id": "Scottie Scheffler", "market_name": "Top 5 Finish", "event_name": "  PGA Cadillac Championship 2026", "category": "current-affairs", "edge_pp": 58.13, "band": "12pp+", "market_prob_pct": 83.33, "claude_prob_pct": 25.2, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0047", "timestamp": "2026-05-03T05:04:53.072936", "platform": "betfair", "market_id": "1.257462599", "contract_id": "Si Woo Kim", "market_name": "Top 5 Finish", "event_name": "  PGA Cadillac Championship 2026", "category": "current-affairs", "edge_pp": 43.73, "band": "12pp+", "market_prob_pct": 60.61, "claude_prob_pct": 16.88, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0048", "timestamp": "2026-05-03T05:04:53.072936", "platform": "betfair", "market_id": "1.257462599", "contract_id": "Kristoffer Reitan", "market_name": "Top 5 Finish", "event_name": "  PGA Cadillac Championship 2026", "category": "current-affairs", "edge_pp": 35.37, "band": "12pp+", "market_prob_pct": 49.02, "claude_prob_pct": 13.65, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0049", "timestamp": "2026-05-03T05:04:53.072936", "platform": "betfair", "market_id": "1.257462599", "contract_id": "Ben Griffin", "market_name": "Top 5 Finish", "event_name": "  PGA Cadillac Championship 2026", "category": "current-affairs", "edge_pp": 26.92, "band": "12pp+", "market_prob_pct": 37.31, "claude_prob_pct": 10.39, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0050", "timestamp": "2026-05-03T05:04:53.072936", "platform": "betfair", "market_id": "1.257462599", "contract_id": "Nick Taylor", "market_name": "Top 5 Finish", "event_name": "  PGA Cadillac Championship 2026", "category": "current-affairs", "edge_pp": 21.54, "band": "12pp+", "market_prob_pct": 29.85, "claude_prob_pct": 8.31, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0051", "timestamp": "2026-05-03T05:04:53.072936", "platform": "matchbook", "market_id": "30682279772700073", "contract_id": "Manchester United", "market_name": "Top 4 Finish", "event_name": "English Premier League  - Top 4 Finish 2025/26", "category": "current-affairs", "edge_pp": 47.65, "band": "12pp+", "market_prob_pct": 91.74, "claude_prob_pct": 44.09, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0052", "timestamp": "2026-05-03T05:04:53.072936", "platform": "matchbook", "market_id": "30682279772700073", "contract_id": "Liverpool", "market_name": "Top 4 Finish", "event_name": "English Premier League  - Top 4 Finish 2025/26", "category": "current-affairs", "edge_pp": 35.1, "band": "12pp+", "market_prob_pct": 67.57, "claude_prob_pct": 32.47, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0053", "timestamp": "2026-05-03T05:04:53.072936", "platform": "matchbook", "market_id": "30682279772700073", "contract_id": "Aston Villa", "market_name": "Top 4 Finish", "event_name": "English Premier League  - Top 4 Finish 2025/26", "category": "current-affairs", "edge_pp": 22.39, "band": "12pp+", "market_prob_pct": 43.1, "claude_prob_pct": 20.71, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0054", "timestamp": "2026-05-03T05:04:53.072936", "platform": "matchbook", "market_id": "30684204946600073", "contract_id": "Aston Villa", "market_name": "Top 6 Finish", "event_name": "English Premier League  - Top 6 Finish 2025/26", "category": "current-affairs", "edge_pp": 10.18, "band": "10-11pp", "market_prob_pct": 16.67, "claude_prob_pct": 6.49, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0055", "timestamp": "2026-05-03T05:04:53.072936", "platform": "matchbook", "market_id": "30684204946600073", "contract_id": "Manchester United", "market_name": "Top 6 Finish", "event_name": "English Premier League  - Top 6 Finish 2025/26", "category": "current-affairs", "edge_pp": 10.18, "band": "10-11pp", "market_prob_pct": 16.67, "claude_prob_pct": 6.49, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0056", "timestamp": "2026-05-03T05:04:53.072936", "platform": "matchbook", "market_id": "30684204946600073", "contract_id": "Liverpool", "market_name": "Top 6 Finish", "event_name": "English Premier League  - Top 6 Finish 2025/26", "category": "current-affairs", "edge_pp": 10.18, "band": "10-11pp", "market_prob_pct": 16.67, "claude_prob_pct": 6.49, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0057", "timestamp": "2026-05-03T05:04:53.072936", "platform": "betfair", "market_id": "1.257462604", "contract_id": "Cameron Young", "market_name": "Top 20 Finish", "event_name": "  PGA Cadillac Championship 2026", "category": "golf", "edge_pp": 9.163499803822656, "band": "10-11pp", "market_prob_pct": 16.67, "claude_prob_pct": 7.5, "confidence": "medium", "above_live_threshold": false, "paper_staked": false, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0058", "timestamp": "2026-05-03T05:04:53.072936", "platform": "betfair", "market_id": "1.257462600", "contract_id": "Cameron Young", "market_name": "Top 10 Finish", "event_name": "  PGA Cadillac Championship 2026", "category": "golf", "edge_pp": 8.384598256341745, "band": "7-9pp", "market_prob_pct": 16.67, "claude_prob_pct": 8.28, "confidence": "medium", "above_live_threshold": false, "paper_staked": false, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0059", "timestamp": "2026-05-03T05:04:53.072936", "platform": "matchbook", "market_id": "30682279772700073", "contract_id": "Manchester City", "market_name": "Top 4 Finish", "event_name": "English Premier League  - Top 4 Finish 2025/26", "category": "soccer", "edge_pp": 7.656926823016789, "band": "7-9pp", "market_prob_pct": 16.67, "claude_prob_pct": 9.01, "confidence": "medium", "above_live_threshold": false, "paper_staked": false, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0060", "timestamp": "2026-05-03T05:04:53.072936", "platform": "matchbook", "market_id": "30684204946600073", "contract_id": "Manchester City", "market_name": "Top 6 Finish", "event_name": "English Premier League  - Top 6 Finish 2025/26", "category": "soccer", "edge_pp": 9.17666666666667, "band": "10-11pp", "market_prob_pct": 16.67, "claude_prob_pct": 7.49, "confidence": "medium", "above_live_threshold": false, "paper_staked": false, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0061", "timestamp": "2026-05-03T17:04:05.077784", "platform": "matchbook", "market_id": "30682279772700073", "contract_id": "Manchester United", "market_name": "Top 4 Finish", "event_name": "English Premier League  - Top 4 Finish 2025/26", "category": "current-affairs", "edge_pp": 47.65, "band": "12pp+", "market_prob_pct": 91.74, "claude_prob_pct": 44.09, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0062", "timestamp": "2026-05-03T17:04:05.077784", "platform": "matchbook", "market_id": "30682279772700073", "contract_id": "Liverpool", "market_name": "Top 4 Finish", "event_name": "English Premier League  - Top 4 Finish 2025/26", "category": "current-affairs", "edge_pp": 34.1, "band": "12pp+", "market_prob_pct": 67.57, "claude_prob_pct": 33.47, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0063", "timestamp": "2026-05-03T17:04:05.077784", "platform": "matchbook", "market_id": "30682279772700073", "contract_id": "Aston Villa", "market_name": "Top 4 Finish", "event_name": "English Premier League  - Top 4 Finish 2025/26", "category": "current-affairs", "edge_pp": 22.39, "band": "12pp+", "market_prob_pct": 43.1, "claude_prob_pct": 20.71, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0064", "timestamp": "2026-05-03T17:04:05.077784", "platform": "matchbook", "market_id": "30684204946600073", "contract_id": "Manchester United", "market_name": "Top 6 Finish", "event_name": "English Premier League  - Top 6 Finish 2025/26", "category": "current-affairs", "edge_pp": 10.18, "band": "10-11pp", "market_prob_pct": 16.67, "claude_prob_pct": 6.49, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0065", "timestamp": "2026-05-03T17:04:05.077784", "platform": "betfair", "market_id": "1.257648184", "contract_id": "Toronto Raptors", "market_name": "Handicap", "event_name": "Toronto Raptors @ Cleveland Cavaliers", "category": "current-affairs", "edge_pp": 64.68, "band": "12pp+", "market_prob_pct": 99.01, "claude_prob_pct": 34.33, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0066", "timestamp": "2026-05-03T17:04:05.077784", "platform": "betfair", "market_id": "1.257648184", "contract_id": "Cleveland Cavaliers", "market_name": "Handicap", "event_name": "Toronto Raptors @ Cleveland Cavaliers", "category": "current-affairs", "edge_pp": 10.06, "band": "10-11pp", "market_prob_pct": 16.67, "claude_prob_pct": 6.61, "confidence": "medium", "above_live_threshold": true, "paper_staked": true, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0067", "timestamp": "2026-05-03T17:04:05.077784", "platform": "matchbook", "market_id": "30682279772700073", "contract_id": "Manchester City", "market_name": "Top 4 Finish", "event_name": "English Premier League  - Top 4 Finish 2025/26", "category": "soccer", "edge_pp": 7.656926823016789, "band": "7-9pp", "market_prob_pct": 16.67, "claude_prob_pct": 9.01, "confidence": "medium", "above_live_threshold": false, "paper_staked": false, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0068", "timestamp": "2026-05-03T17:04:05.077784", "platform": "matchbook", "market_id": "30684204946600073", "contract_id": "Manchester City", "market_name": "Top 6 Finish", "event_name": "English Premier League  - Top 6 Finish 2025/26", "category": "soccer", "edge_pp": 7.176666666666669, "band": "7-9pp", "market_prob_pct": 16.67, "claude_prob_pct": 9.49, "confidence": "medium", "above_live_threshold": false, "paper_staked": false, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0069", "timestamp": "2026-05-03T17:04:05.077784", "platform": "matchbook", "market_id": "30684204946600073", "contract_id": "Aston Villa", "market_name": "Top 6 Finish", "event_name": "English Premier League  - Top 6 Finish 2025/26", "category": "soccer", "edge_pp": 8.17666666666667, "band": "7-9pp", "market_prob_pct": 16.67, "claude_prob_pct": 8.49, "confidence": "medium", "above_live_threshold": false, "paper_staked": false, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}, {"entry_id": "D0070", "timestamp": "2026-05-03T17:04:05.077784", "platform": "matchbook", "market_id": "30684204946600073", "contract_id": "Liverpool", "market_name": "Top 6 Finish", "event_name": "English Premier League  - Top 6 Finish 2025/26", "category": "soccer", "edge_pp": 7.176666666666669, "band": "7-9pp", "market_prob_pct": 16.67, "claude_prob_pct": 9.49, "confidence": "medium", "above_live_threshold": false, "paper_staked": false, "win": null, "resolved": false, "resolved_at": null, "resolution_notes": null}], "signals": [{"market_name": "Top 4 Finish", "selection_name": "Manchester United", "contract_name": "Manchester United", "edge_pp": 47.65, "platform": "matchbook", "confidence": "medium"}, {"market_name": "Top 4 Finish", "selection_name": "Liverpool", "contract_name": "Liverpool", "edge_pp": 34.1, "platform": "matchbook", "confidence": "medium"}, {"market_name": "Top 4 Finish", "selection_name": "Aston Villa", "contract_name": "Aston Villa", "edge_pp": 22.39, "platform": "matchbook", "confidence": "medium"}, {"market_name": "Top 6 Finish", "selection_name": "Manchester United", "contract_name": "Manchester United", "edge_pp": 10.18, "platform": "matchbook", "confidence": "medium"}, {"market_name": "Handicap", "selection_name": "Toronto Raptors", "contract_name": "Toronto Raptors", "edge_pp": 64.68, "platform": "betfair", "confidence": "medium"}, {"market_name": "Handicap", "selection_name": "Cleveland Cavaliers", "contract_name": "Cleveland Cavaliers", "edge_pp": 10.06, "platform": "betfair", "confidence": "medium"}, {"market_name": "Handicap", "selection_name": "Toronto Raptors", "contract_name": "Toronto Raptors", "edge_pp": 64.68, "platform": "betfair", "confidence": "medium"}, {"market_name": "Handicap", "selection_name": "Cleveland Cavaliers", "contract_name": "Cleveland Cavaliers", "edge_pp": 10.06, "platform": "betfair", "confidence": "medium"}, {"market_name": "Handicap", "selection_name": "Toronto Raptors", "contract_name": "Toronto Raptors", "edge_pp": 64.68, "platform": "betfair", "confidence": "medium"}, {"market_name": "Handicap", "selection_name": "Cleveland Cavaliers", "contract_name": "Cleveland Cavaliers", "edge_pp": 10.06, "platform": "betfair", "confidence": "medium"}], "activity": [{"name": "routine_1800", "start": "2026-05-03 18:00:01", "end": "2026-05-03 18:04:56", "status": "complete", "duration_min": 4}, {"name": "routine_1400", "start": "2026-05-03 14:00:01", "end": "2026-05-03 14:04:59", "status": "complete", "duration_min": 4}, {"name": "routine_1000", "start": "2026-05-03 10:00:01", "end": "2026-05-03 10:04:44", "status": "complete", "duration_min": 4}, {"name": "routine_0600", "start": "2026-05-03 06:00:01", "end": "2026-05-03 06:05:47", "status": "complete", "duration_min": 5}, {"name": "routine_2300", "start": "2026-05-02 23:00:01", "end": "2026-05-02 23:04:56", "status": "complete", "duration_min": 4}, {"name": "routine_1800", "start": "2026-05-02 18:00:01", "end": "2026-05-02 18:05:47", "status": "complete", "duration_min": 5}, {"name": "routine_1715", "start": "2026-05-02 17:15:47", "end": "2026-05-02 17:21:36", "status": "complete", "duration_min": 5}, {"name": "routine_1612", "start": "2026-05-02 16:12:29", "end": "2026-05-02 16:16:51", "status": "complete", "duration_min": 4}], "betfair_status": {"last_scan": "2026-05-03T17:02:07.465897", "platform": "betfair", "total_markets": 481, "tradeable_markets": 75, "snapshot_file": "/home/jwfalc/smarkets-bot/data/snapshots/betfair/2026-05-03_17-02.json", "status": "ok", "error": null}, "matchbook_status": {"last_scan": "2026-05-03T17:02:25.838887", "platform": "matchbook", "total_markets": 0, "tradeable_markets": 0, "snapshot_file": null, "status": "error", "error": "Matchbook login failed after 3 attempts"}, "backup_status": {"last_code_backup": "2026-05-03T02:00:02.156450", "last_data_backup": "2026-05-03T02:00:02.156450", "last_code_status": "ok", "last_data_status": "ok", "last_code_error": null, "last_data_error": null}, "last_run_context": "============================================================\nSMARKETS BOT - LAST RUN CONTEXT\n============================================================\n\nDate & Time: 2026-05-03 18:04 UTC\n\nSCANNER RESULTS:\n- Betfair: 481 total markets, 75 above 100 GBP volume threshold\n- Matchbook: FAILED (login error - incorrect credentials)\n  * Used previous snapshot from 2026-05-02 (578 tradeable markets)\n- Smarkets: Not configured (API closed to new users)\n\nRESEARCH PHASE:\n- Markets researched: 25 (combined from all platforms)\n- Markets analyzed: 25 (100% completion)\n- Web searches performed: 50 (Tavily API searches)\n  * 2-3 searches per market\n  * 0 research errors\n- Mode: PAPER (paper_mode = true)\n\nSIGNALS FOUND:\n- 10pp+ signals found: 10 total\n  * Betfair: 10 signals\n  * Matchbook: 0 signals\n- Highest edge: 65pp (LAY positions)\n- Edge range: 10pp to 65pp\n\nDISTRIBUTION ENTRIES:\n- New entries logged: 10 (from this run)\n- Total entries by band:\n  * 7-9pp: 16 entries (0 resolved, 16 pending)\n  * 10-11pp: 11 entries (1 resolved, 10 pending)\n  * 12pp+: 43 entries (3 resolved, 40 pending)\n- Total resolved: 4\n- Review status: NOT DUE (need 12 resolved per band)\n\nPAPER TRADING:\n- New paper trades logged: 10\n- Trade types: All LAY positions\n- Status: Logged for paper tracking\n\nDISTRIBUTION SUMMARY:\n- Total distribution entries in edge_distribution.json: 70\n- Entries above 10pp: 54\n- Entries 7-9pp: 16\n- Resolved trades: 4 total\n\nERRORS ENCOUNTERED:\n1. Matchbook scanner failure - login credentials incorrect\n   Action: Verify credentials in config.toml [matchbook] section\n   Workaround: Using previous day's snapshot for cross-platform analysis\n\n2. Deprecation warnings in datetime.utcnow() usage\n   Action: Non-critical, Python 3.13+ compatibility update needed\n\nNEXT ACTIONS:\n1. Fix Matchbook credentials to enable fresh dual-platform scanning\n2. Continue monitoring distribution data for edge band calibration\n3. Watch for distribution review trigger (12 resolved per band)\n4. Potential prompt review when distribution data reaches 50+ entries per band\n\nKEY METRICS:\n- Betfair platform: OPERATIONAL\n- Matchbook platform: CREDENTIAL ERROR (using fallback)\n- Paper mode: ACTIVE\n- Kelly fraction: 0.25 (quarter-Kelly, conservative)\n- Min volume threshold: \u00a3100 GBP\n- Min edge threshold (paper): 7pp\n- Min edge threshold (live): 10pp (when mode switches)\n- Distribution review threshold: 12 entries per band\n- Total Tavily credits used: 50/1000 (monthly)\n\nRUN COMPLETION STATUS: ALL 8 STEPS COMPLETED SUCCESSFULLY\n============================================================\n"};
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const pad2 = n => String(n).padStart(2,'0');
+const SCHED = [6,10,14,18,23];
+const BAND_THRESH = 12;
+
+function fmtUTC(iso) {
+  if (!iso) return '—';
+  try {
+    const d = new Date(iso.includes('T') ? iso : iso.replace(' ','T')+'Z');
+    return `${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())} UTC`;
+  } catch { return '—'; }
+}
+
+function fmtAgo(iso) {
+  if (!iso) return '';
+  try {
+    const d = new Date(iso.includes('T') ? iso : iso.replace(' ','T')+'Z');
+    const m = Math.floor((Date.now() - d)/60000);
+    if (m < 1) return 'just now';
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m/60);
+    return `${h}h ${pad2(m%60)}m ago`;
+  } catch { return ''; }
+}
+
+function nextNRuns(n) {
+  const now = Date.now(), runs = [];
+  for (let d = 0; d <= 3 && runs.length < n; d++) {
+    const base = new Date(now + d*86400000);
+    for (const h of SCHED) {
+      const t = Date.UTC(base.getUTCFullYear(),base.getUTCMonth(),base.getUTCDate(),h,0,0);
+      if (t > now) { runs.push(new Date(t)); if (runs.length===n) break; }
+    }
+  }
+  return runs;
+}
+
+function fmtCountdown(d) {
+  const s = Math.round((d - Date.now())/1000);
+  if (s <= 0) return 'now';
+  const h = Math.floor(s/3600), m = Math.floor((s%3600)/60);
+  return h > 0 ? `in ${h}h ${pad2(m)}m` : `in ${m}m`;
+}
+
+// ─── PIPELINE ─────────────────────────────────────────────────────────────────
+const STAGES = [
+  {key:'scan',lbl:'SCAN'},
+  {key:'research',lbl:'RESEARCH'},
+  {key:'analyse',lbl:'ANALYSE'},
+  {key:'digest',lbl:'DIGEST'},
+  {key:'done',lbl:'DONE'},
+];
+const STEP_MAP = {scan:0,research:1,claude:2,digest:3,done:4,watchdog:4};
+
+function buildPipeline() {
+  const c = $('pipeline'); c.innerHTML = '';
+  STAGES.forEach((s,i) => {
+    if (i > 0) {
+      const conn = document.createElement('div');
+      conn.className = 'pconn'; conn.id = `pc${i}`; c.appendChild(conn);
+    }
+    const w = document.createElement('div'); w.className = 'pstage';
+    w.innerHTML = `<div class="pdot" id="pd${s.key}">${i+1}</div><div class="plbl" id="pl${s.key}">${s.lbl}</div>`;
+    c.appendChild(w);
+  });
+}
+
+function setPipeline(rs) {
+  const state = rs?.state || 'idle';
+  const step = rs?.current_step || '';
+  let ai = state==='complete' ? STAGES.length : state==='idle' ? -1 : (STEP_MAP[step]??0);
+  STAGES.forEach((s,i) => {
+    const dot = $(`pd${s.key}`), lbl = $(`pl${s.key}`);
+    if (!dot) return;
+    let cls = '';
+    if (state==='complete') cls='done';
+    else if (i < ai) cls='done';
+    else if (i===ai) cls=(state==='error'?'err':'active');
+    dot.className=`pdot ${cls}`; lbl.className=`plbl ${cls}`;
+    if (i>0) { const c=$(`pc${i}`); if(c) c.className=`pconn ${i<ai?'done':i===ai&&state!=='idle'?'active':''}`; }
+  });
+}
+
+// ─── STATUS ───────────────────────────────────────────────────────────────────
+function renderStatus(rs) {
+  const state = rs?.state || 'idle';
+  const msg = rs?.message || '';
+  const MAP = {idle:{t:'IDLE',c:'idle'},running:{t:'RUNNING',c:'running'},starting:{t:'STARTING',c:'starting'},complete:{t:'COMPLETE',c:'complete'},error:{t:'ERROR',c:'error'}};
+  const inf = MAP[state]||MAP.idle;
+  const pulse = (state==='running'||state==='starting');
+  $('run-badge').className=`badge ${inf.c}`;
+  $('run-badge').innerHTML=pulse?`<span class="pulse"></span>&nbsp;${inf.t}`:`<span>&#x25CF;</span>&nbsp;${inf.t}`;
+  $('run-msg').textContent=msg||'Waiting for next routine';
+  setPipeline(rs);
+}
+
+// ─── SCHEDULE ─────────────────────────────────────────────────────────────────
+function renderSchedule() {
+  const runs = nextNRuns(5);
+  $('sch-row').innerHTML = runs.map((d,i)=>`
+    <div class="sch-item ${i===0?'next':''}">
+      <div class="sch-time">${pad2(d.getUTCHours())}:00</div>
+      <div class="sch-cd">${fmtCountdown(d)}</div>
+    </div>`).join('');
+  $('sch-note').textContent = `Snapshot age: ${fmtAgo(D.deployed_at||'')}`;
+  setInterval(()=>{
+    $('sch-row').innerHTML = nextNRuns(5).map((d,i)=>`
+      <div class="sch-item ${i===0?'next':''}">
+        <div class="sch-time">${pad2(d.getUTCHours())}:00</div>
+        <div class="sch-cd">${fmtCountdown(d)}</div>
+      </div>`).join('');
+  }, 60000);
+}
+
+// ─── PERFORMANCE ──────────────────────────────────────────────────────────────
+function renderPerformance(paper) {
+  const pt = paper||{};
+  const pnl = pt.paper_pnl??0, trades = pt.total_trades??0;
+  const wr = pt.win_rate_pct??null, open = pt.open_trades??0;
+  const pb = pt.platform_breakdown||{};
+
+  const el = $('pnl-big');
+  el.textContent = (pnl>=0?'+':'')+'£'+pnl.toFixed(2);
+  el.className = `pnl-big ${pnl>0?'pos':pnl<0?'neg':'neu'}`;
+  $('s-trades').textContent = trades;
+  $('s-wr').textContent = wr!==null&&trades>0?wr.toFixed(1)+'%':'—';
+  $('s-open').textContent = open;
+
+  const plats = Object.keys(pb);
+  $('plat-bars').innerHTML = plats.length ? plats.map(p=>{
+    const d=pb[p], r=d.win_rate_pct??0;
+    const col=r>=60?'var(--green)':r>=40?'var(--amber)':'var(--red)';
+    return `<div class="prog-row">
+      <div class="prog-lbl"><span>${p.toUpperCase()}</span><span style="color:var(--text)">${r.toFixed(0)}%</span></div>
+      <div class="prog-track"><div class="prog-fill" style="width:${r}%;background:${col}"></div></div>
+    </div>`;
+  }).join('') : '<div style="font-size:10px;color:var(--dim)">Awaiting first paper trades</div>';
+}
+
+// ─── SIGNAL BANDS ─────────────────────────────────────────────────────────────
+function renderBands(dist) {
+  const E = Array.isArray(dist)?dist:[];
+  $('d-total').textContent = E.length;
+  $('d-res').textContent = E.filter(e=>e.resolved).length;
+  $('d-open').textContent = E.filter(e=>!e.resolved).length;
+
+  const bands = ['7-9pp','10-11pp','12pp+'];
+  const cols = {'7-9pp':'var(--blue)','10-11pp':'var(--amber)','12pp+':'var(--green)'};
+  $('band-cards').innerHTML = bands.map(b=>{
+    const items = E.filter(e=>e.band===b);
+    const res = items.filter(e=>e.resolved);
+    const wins = res.filter(e=>e.win===true).length;
+    const wr = res.length?((wins/res.length)*100).toFixed(0):null;
+    const pct = Math.min(100,(items.length/BAND_THRESH)*100);
+    return `<div class="band-item">
+      <div class="band-top">
+        <div class="band-name" style="color:${cols[b]}">${b}</div>
+        <div class="band-count" style="color:${cols[b]}">${items.length}</div>
+      </div>
+      <div class="band-meta">
+        <span>${res.length} resolved &middot; ${items.length-res.length} open</span>
+        <span>WR: ${wr!==null?wr+'%':'—'}</span>
+      </div>
+      <div class="band-prog"><div class="band-progf" style="width:${pct}%;background:${cols[b]}"></div></div>
+      <div style="font-size:8px;color:var(--dim2);margin-top:4px">${items.length}/${BAND_THRESH} for review trigger</div>
+    </div>`;
+  }).join('');
+
+  const slow = Math.min(...bands.map(b=>E.filter(e=>e.band===b).length));
+  $('review-note').innerHTML = slow>=BAND_THRESH
+    ?`<span style="color:var(--green)">&#x2713; Review due</span>`
+    :`Need ${BAND_THRESH-slow} more in slowest band`;
+}
+
+// ─── SIGNALS ──────────────────────────────────────────────────────────────────
+function renderSignals(sigs) {
+  const sl = $('signals-list');
+  if (!sigs||!sigs.length) {
+    sl.innerHTML = '<div style="color:var(--dim);font-size:11px">No signals in current snapshot</div>';
+    return;
+  }
+  sl.innerHTML = sigs.slice(0,8).map(s=>{
+    const ec = s.edge_pp>=10?'hi':'lo';
+    const platCls = (s.platform||'').toLowerCase();
+    return `<div class="sig-item">
+      <div class="sig-top">
+        <div class="sig-name">${s.selection_name||s.contract_name||s.market_name||'—'}</div>
+        <div class="sig-edge ${ec}">+${(s.edge_pp||0).toFixed(1)}pp</div>
+      </div>
+      <div class="sig-meta">${s.market_name||''}<span class="plat-pill ${platCls}">${(s.platform||'').toUpperCase()}</span></div>
+    </div>`;
+  }).join('');
+}
+
+// ─── ACTIVITY ─────────────────────────────────────────────────────────────────
+function renderActivity(sessions) {
+  const el = $('activity-list');
+  if (!sessions||!sessions.length) {
+    el.innerHTML='<div style="color:var(--dim);font-size:11px">No recent activity</div>';
+    return;
+  }
+  el.innerHTML = sessions.slice(0,6).map(s=>{
+    const dur = s.duration_min!=null?` · ${s.duration_min}m`:'';
+    return `<div class="act-item">
+      <div class="act-dot ${s.status||'idle'}"></div>
+      <div class="act-body">
+        <div class="act-title">${s.name||'routine'}</div>
+        <div class="act-meta">${s.start?s.start.slice(11,16)+' UTC':''} ${dur}</div>
+      </div>
+      <div class="act-badge ${s.status||'idle'}">${(s.status||'idle').toUpperCase()}</div>
+    </div>`;
+  }).join('');
+}
+
+// ─── HEALTH ───────────────────────────────────────────────────────────────────
+function renderHealth(bf, mb, bk) {
+  const buildConn = (name,s) => {
+    const ok = s?.status==='ok';
+    const age = s?.last_scan?Date.now()-new Date(s.last_scan).getTime():null;
+    const stale = age!==null&&age>4*3600*1000;
+    const cls = !s?'':'ok'; // simplify for static
+    const mkts = s?.tradeable_markets??'—';
+    const lastS = s?.last_scan?fmtAgo(s.last_scan):'no data';
+    return `<div class="conn-pill ${s?(stale?'stale':'ok'):''}">
+      <div class="conn-name"><div class="conn-dot"></div>${name.toUpperCase()}</div>
+      <div class="conn-sub">${mkts} tradeable</div>
+      <div class="conn-sub">${lastS}</div>
+    </div>`;
+  };
+  $('conn-grid').innerHTML = buildConn('Betfair',bf) + buildConn('Matchbook',mb);
+
+  const b = bk||{};
+  $('backup-rows').innerHTML = `
+    <div class="bk-row"><div class="bk-lbl">Code backup</div><div class="bk-val ${b.last_code_status==='ok'?'ok':'err'}">${b.last_code_status||'—'}${b.last_code_backup?' · '+fmtAgo(b.last_code_backup):''}</div></div>
+    <div class="bk-row"><div class="bk-lbl">Data backup</div><div class="bk-val ${b.last_data_status==='ok'?'ok':'err'}">${b.last_data_status||'—'}${b.last_data_backup?' · '+fmtAgo(b.last_data_backup):''}</div></div>`;
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function render() {
+  const { run_status, paper_trading, edge_distribution, signals, activity,
+          betfair_status, matchbook_status, backup_status, last_run_context,
+          deployed_at, mode } = D;
+
+  $('deployed-at').textContent = deployed_at?fmtAgo(deployed_at):'—';
+
+  const m = mode||'paper';
+  $('mode-pill').textContent = m==='paper'?'PAPER':'LIVE';
+  $('mode-pill').style.borderColor = m==='paper'?'var(--amber)':'var(--green)';
+  $('mode-pill').style.color = m==='paper'?'var(--amber)':'var(--green)';
+
+  buildPipeline();
+  renderStatus(run_status);
+  renderSchedule();
+  renderPerformance(paper_trading);
+  renderBands(edge_distribution);
+  renderSignals(signals);
+  renderActivity(activity);
+  renderHealth(betfair_status, matchbook_status, backup_status);
+
+  const ctxLines = (last_run_context||'').split('\n')
+    .filter(l=>l.trim()&&!l.startsWith('=')&&!l.startsWith('BOT'))
+    .slice(0,12).join('\n');
+  $('ctx-box').textContent = ctxLines||'No run context available';
+}
+
+render();
+</script>
+</body>
+</html>
